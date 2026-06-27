@@ -624,9 +624,12 @@
 
   <div class="flip-container" id="flipContainer">
     <div class="flip-front">
-      <video class="video-background" id="bgVideo" autoplay loop playsinline muted>
-        <source src="openplay.mp4" type="video/mp4">
-      </video>
+      <!-- 改动1：视频换成图片 -->
+      <img class="video-background" src="openplay.jpg" alt="背景">
+      <!-- 改动2：添加隐藏的音频元素，初始静音自动播放 -->
+      <audio id="bgAudio" loop autoplay muted>
+        <source src="openplay.mp3" type="audio/mpeg">
+      </audio>
       <div class="video-overlay"></div>
 
       <div class="help-container" id="helpContainer">
