@@ -829,11 +829,18 @@
   </div>
 
   <script>
-    // ========== 原有所有 JS 逻辑（完全保留，不修改） ==========
+    // ========== 原有所有 JS 逻辑（仅改动音频部分） ==========
     (function() {
-      const bgVideo = document.getElementById('bgVideo');
+      // 改动3：获取音频元素
+      const bgAudio = document.getElementById('bgAudio');
+      
+      // 改动4：点击任意位置解除静音并播放
       document.addEventListener('click', function enableSound() {
-        if (bgVideo.muted) { bgVideo.muted = false; bgVideo.volume = 0.5; if (bgVideo.paused) bgVideo.play().catch(() => {}); }
+        if (bgAudio.muted) {
+          bgAudio.muted = false;
+          bgAudio.volume = 0.5;
+          if (bgAudio.paused) bgAudio.play().catch(() => {});
+        }
       }, { once: true });
 
       let allBills = [
@@ -1110,16 +1117,16 @@
       helpCloseBtn.addEventListener('click', () => { helpPanel.classList.remove('show'); helpBtn.style.display = 'flex'; });
     })();
 
-    // ========== 翻转控制逻辑 ==========
+    // ========== 翻转控制逻辑（修改音量引用） ==========
     (function() {
       const flipContainer = document.getElementById('flipContainer');
       const flipBtn = document.getElementById('flipBtn');
       const flipBackBtn = document.getElementById('flipBackBtn');
+      const bgAudio = document.getElementById('bgAudio');
       function toggleFlip() {
         flipContainer.classList.toggle('flipped');
-        const bgVideo = document.getElementById('bgVideo');
-        if (bgVideo) {
-          bgVideo.volume = flipContainer.classList.contains('flipped') ? 0.2 : 0.5;
+        if (bgAudio) {
+          bgAudio.volume = flipContainer.classList.contains('flipped') ? 0.2 : 0.5;
         }
       }
       flipBtn.addEventListener('click', toggleFlip);
@@ -1139,7 +1146,6 @@
       const visualizerCanvas = document.getElementById('radioVisualizer');
       const vizCtx = visualizerCanvas.getContext('2d');
 
-      // 模拟电台曲库
       const songs = [
         { title: "千年等一回", artist: "高胜美", freq: 97.5 },
         { title: "遇见", artist: "孙燕姿", freq: 101.7 },
@@ -1185,7 +1191,7 @@
         const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
         const data = buffer.getChannelData(0);
         for (let i = 0; i < bufferSize; i++) {
-          data[i] = (Math.random() * 2 - 1) * 0.05; // 白噪音
+          data[i] = (Math.random() * 2 - 1) * 0.05;
         }
         noiseNode = audioCtx.createBufferSource();
         noiseNode.buffer = buffer;
@@ -1254,7 +1260,6 @@
         if (!radioOn) return;
         updateDisplay(randomSong());
         radioTip.textContent = randomTip();
-        // 稍微改变频率以增加真实感
         const newFreq = (87 + Math.random() * 21).toFixed(1);
         radioFreqDisplay.textContent = newFreq;
         radioFreqSlider.value = newFreq;
@@ -1267,7 +1272,6 @@
         const freq = parseFloat(radioFreqSlider.value).toFixed(1);
         radioFreqDisplay.textContent = freq;
         if (radioOn) {
-          // 根据频率选择一个接近的歌曲
           const closest = songs.reduce((prev, curr) => Math.abs(curr.freq - freq) < Math.abs(prev.freq - freq) ? curr : prev);
           updateDisplay(closest);
           radioTip.textContent = randomTip();
@@ -1276,7 +1280,6 @@
         }
       });
 
-      // 初始化显示
       updateDisplay(songs[0]);
       radioTip.textContent = tips[0];
       startVisualizer();
@@ -1293,7 +1296,6 @@
       function drawJournal() {
         const data = window.consumerData;
         if (!data || !data.allBills || data.allBills.length === 0) {
-          // 没有数据时绘制提示
           ctx.clearRect(0, 0, canvas.width, canvas.height);
           ctx.fillStyle = '#1b2a3a';
           ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -1310,27 +1312,22 @@
         const h = canvas.height;
         ctx.clearRect(0, 0, w, h);
 
-        // 背景
         ctx.fillStyle = '#fdf8f0';
         ctx.fillRect(0, 0, w, h);
-        // 复古纸纹
         ctx.fillStyle = 'rgba(200, 180, 140, 0.15)';
         for (let i = 0; i < 50; i++) {
           ctx.fillRect(Math.random() * w, Math.random() * h, 2, 2);
         }
 
-        // 标题
         ctx.fillStyle = '#5c4a3a';
         ctx.font = 'bold 20px "Microsoft YaHei"';
         ctx.textAlign = 'center';
         ctx.fillText('📜 消费手账', w/2, 40);
 
-        // 日期
         const today = new Date().toLocaleDateString('zh-CN');
         ctx.font = '12px "Microsoft YaHei"';
         ctx.fillText(today, w/2, 65);
 
-        // 分隔线
         ctx.strokeStyle = '#d4b48f';
         ctx.lineWidth = 1;
         ctx.beginPath();
@@ -1338,13 +1335,12 @@
         ctx.lineTo(w-30, 80);
         ctx.stroke();
 
-        // 列出账单
         ctx.textAlign = 'left';
         ctx.font = '13px "Microsoft YaHei"';
         let y = 110;
-        const bills = data.allBills.slice(0, 6); // 最多显示6条
+        const bills = data.allBills.slice(0, 6);
         let totalSpent = 0;
-        bills.forEach((bill, idx) => {
+        bills.forEach((bill) => {
           ctx.fillStyle = '#3a3228';
           ctx.fillText(`${bill.date}  ${bill.merchant}`, 40, y);
           ctx.fillStyle = '#b85c3a';
@@ -1355,7 +1351,6 @@
           y += 22;
         });
 
-        // 总计
         ctx.strokeStyle = '#d4b48f';
         ctx.beginPath();
         ctx.moveTo(30, y+5);
@@ -1370,7 +1365,6 @@
         ctx.fillText(`¥${totalSpent}`, w-40, y);
         ctx.textAlign = 'left';
 
-        // 小贴士
         y += 35;
         const savingsTotal = data.savingsData ? data.savingsData.reduce((s,r)=>s+r.amount,0) : 0;
         ctx.font = '11px "Microsoft YaHei"';
@@ -1379,7 +1373,6 @@
         y += 22;
         ctx.fillText('💡 冷静清单项目数：' + (data.cooldownItems ? data.cooldownItems.length : 0), 40, y);
 
-        // 底部装饰
         ctx.font = '10px "Microsoft YaHei"';
         ctx.fillStyle = '#b8a48c';
         ctx.textAlign = 'center';
@@ -1410,16 +1403,13 @@
                 text: '看看我的千禧复古消费手账！',
                 files: [file]
               });
-            } catch (e) {
-              // 用户取消分享
-            }
+            } catch (e) {}
           }
         } else {
           alert('当前浏览器不支持分享功能，请使用“保存图片”按钮下载后分享。');
         }
       });
 
-      // 初始状态不显示手账
       canvas.style.display = 'none';
     })();
   </script>
