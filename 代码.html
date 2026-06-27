@@ -1,0 +1,1424 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>消费清醒账 Pro</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Heiti SC', 'Microsoft YaHei', 'SimHei', sans-serif;
+      background: transparent;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* ========== 3D翻转核心样式 ========== */
+    .flip-container {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      perspective: 2000px;
+      transform-style: preserve-3d;
+    }
+    .flip-front, .flip-back {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      backface-visibility: hidden;
+      transform-style: preserve-3d;
+      transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+      overflow-x: hidden;
+      overflow-y: auto;
+    }
+    .flip-front {
+      transform: rotateY(0deg);
+    }
+    .flip-back {
+      transform: rotateY(180deg);
+      background: #121822;
+      background-image: repeating-linear-gradient(0deg, rgba(255,255,255,0.02) 0px, rgba(255,255,255,0.02) 1px, transparent 1px, transparent 2px), repeating-linear-gradient(90deg, rgba(255,255,255,0.02) 0px, rgba(255,255,255,0.02) 1px, transparent 1px, transparent 2px);
+    }
+    .flip-container.flipped .flip-front {
+      transform: rotateY(180deg);
+    }
+    .flip-container.flipped .flip-back {
+      transform: rotateY(0deg);
+    }
+
+    .flip-toggle-btn {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      z-index: 100;
+      cursor: pointer;
+    }
+    .crt-tv.mini {
+      width: 50px;
+    }
+    .crt-tv.mini .crt-screen {
+      height: 38px;
+    }
+    .crt-tv.mini .crt-icon {
+      font-size: 1.2rem;
+    }
+    .crt-tv.mini .crt-control {
+      height: 12px;
+    }
+    .crt-tv.mini .crt-label {
+      font-size: 0.5rem;
+    }
+
+    .flip-front {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background: transparent;
+    }
+
+    /* 背面暗色主题 */
+    .back-bg {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(18, 24, 34, 0.95);
+      backdrop-filter: blur(8px);
+      z-index: -1;
+    }
+    .back-content {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
+      position: relative;
+      z-index: 1;
+    }
+    .back-header {
+      margin-bottom: 30px;
+      text-align: center;
+    }
+    .crt-screen.dark {
+      background: #1a2634;
+    }
+    /* 调整后的功能卡片网格：仅两列对称 */
+    .new-features-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 30px;
+      max-width: 1000px;
+      width: 100%;
+      margin: 0 auto;
+    }
+    @media (max-width: 700px) {
+      .new-features-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    .feature-card {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 24px;
+      padding: 24px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.2), 0 6px 12px rgba(0,0,0,0.3);
+      color: #dce6f0;
+      transition: 0.2s;
+      display: flex;
+      flex-direction: column;
+      min-height: 360px;
+    }
+    .feature-card:hover {
+      transform: translateY(-4px);
+      background: rgba(255,255,255,0.12);
+    }
+    .feature-card h4 {
+      font-size: 1.2rem;
+      margin-bottom: 16px;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .feature-card .card-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    .flip-back-btn {
+      margin-top: 40px;
+      background: rgba(91, 140, 175, 0.3);
+    }
+    .flip-back-btn:hover {
+      background: rgba(91, 140, 175, 0.5);
+    }
+
+    /* 电台内部样式 */
+    .radio-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+    .radio-display {
+      font-size: 1.3rem;
+      font-weight: bold;
+      color: #f1c40f;
+      text-shadow: 0 0 6px rgba(241, 196, 15, 0.5);
+      min-height: 40px;
+    }
+    .radio-frequency {
+      font-size: 1.8rem;
+      letter-spacing: 2px;
+    }
+    .radio-controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .radio-btn {
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.25);
+      padding: 8px 16px;
+      border-radius: 20px;
+      color: #dce6f0;
+      cursor: pointer;
+      font-weight: bold;
+      transition: background 0.2s;
+    }
+    .radio-btn:hover {
+      background: rgba(255,255,255,0.2);
+    }
+    .radio-btn.active {
+      background: #5b8caf;
+      border-color: #7fb0d0;
+    }
+    .radio-freq-slider {
+      width: 100px;
+      accent-color: #5b8caf;
+    }
+    .radio-visualizer {
+      width: 100%;
+      height: 60px;
+      background: rgba(0,0,0,0.4);
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.1);
+      display: block;
+    }
+    .radio-tip {
+      font-size: 0.85rem;
+      color: #8ea4c0;
+      text-align: center;
+      padding: 6px 12px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 12px;
+      min-height: 40px;
+      display: flex;
+      align-items: center;
+    }
+
+    /* 手账内部样式 */
+    .journal-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+    .journal-canvas-wrapper {
+      width: 100%;
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+    #journalCanvas {
+      width: 100%;
+      max-width: 320px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+      display: none;
+    }
+    .journal-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    /* 原有全局样式保持不变 */
+    .video-background {
+      position: fixed;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      object-fit: cover; z-index: -2; pointer-events: none;
+    }
+    .video-overlay {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(255, 255, 255, 0.2);
+      backdrop-filter: blur(4px);
+      z-index: -1; pointer-events: none;
+    }
+
+    .main-layout {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 30px;
+      flex-wrap: wrap;
+    }
+
+    .bb-shell {
+      width: 680px; height: 820px;
+      background: #c4c9cc;
+      background-image: linear-gradient(145deg, #d0d5d8 0%, #b8bcc0 100%);
+      border-radius: 50px 50px 40px 40px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.6), inset 0 -2px 0 rgba(0,0,0,0.1), 0 0 0 2px #a5a9ad;
+      position: relative;
+      padding: 30px 30px 50px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background-blend-mode: overlay;
+      background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><filter id="noise"><feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/></filter><rect width="100" height="100" filter="url(#noise)" opacity="0.03"/></svg>');
+    }
+    .antenna {
+      position: absolute;
+      top: -48px; left: 50%; transform: translateX(-50%);
+      width: 6px; height: 48px;
+      background: linear-gradient(to bottom, #888, #555);
+      border-radius: 3px 3px 0 0;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.4);
+    }
+    .antenna::after {
+      content: '';
+      position: absolute; top: -8px; left: 50%; transform: translateX(-50%);
+      width: 10px; height: 10px;
+      background: #777; border-radius: 50%;
+      box-shadow: 0 0 2px rgba(0,0,0,0.4);
+    }
+    .side-dial {
+      position: absolute;
+      left: -30px; top: 180px;
+      width: 22px; height: 50px;
+      background: #5a5e62; border-radius: 6px;
+      box-shadow: inset 0 0 4px rgba(0,0,0,0.5), 0 2px 4px rgba(0,0,0,0.3);
+      display: flex; flex-direction: column; align-items: center; justify-content: space-evenly;
+    }
+    .side-dial::before, .side-dial::after {
+      content: '';
+      width: 14px; height: 4px;
+      background: #aaa; border-radius: 2px;
+      box-shadow: 0 1px 0 rgba(255,255,255,0.3);
+    }
+    .green-led {
+      position: absolute;
+      bottom: 28px; right: 30px;
+      width: 14px; height: 14px;
+      background: #2ecc40; border-radius: 50%;
+      box-shadow: 0 0 8px #2ecc40, 0 0 2px rgba(0,0,0,0.4);
+      z-index: 5;
+    }
+    .bottom-keys {
+      position: absolute;
+      bottom: 12px; left: 50%; transform: translateX(-50%);
+      display: flex; gap: 30px; z-index: 5;
+    }
+    .key-btn {
+      width: 36px; height: 36px;
+      background: #3a3c3e; border-radius: 50%;
+      box-shadow: 0 3px 0 #1e1f20, 0 6px 8px rgba(0,0,0,0.3);
+      cursor: pointer; transition: all 0.08s; position: relative;
+    }
+    .key-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 #1e1f20, 0 2px 4px rgba(0,0,0,0.3); }
+    .key-btn::after {
+      content: '';
+      position: absolute; top: 4px; left: 50%; transform: translateX(-50%);
+      width: 18px; height: 4px;
+      background: rgba(255,255,255,0.2); border-radius: 2px;
+    }
+
+    .screen {
+      width: 100%;
+      background: #1b2a3a;
+      background-image: radial-gradient(circle at 20% 30%, rgba(100,140,180,0.15) 0%, transparent 40%);
+      border-radius: 36px;
+      padding: 24px 20px 20px;
+      box-shadow: inset 0 0 20px rgba(0,0,0,0.5), 0 0 0 6px #2d2d2d;
+      border: 2px solid #1a1a1a;
+      min-height: 650px;
+      display: flex; flex-direction: column; overflow: hidden;
+      background-image: repeating-linear-gradient(0deg, rgba(255,255,255,0.03) 0px, rgba(255,255,255,0.03) 1px, transparent 1px, transparent 2px), repeating-linear-gradient(90deg, rgba(255,255,255,0.03) 0px, rgba(255,255,255,0.03) 1px, transparent 1px, transparent 2px);
+    }
+    .screen-content { flex: 1; display: none; flex-direction: column; }
+    .screen-content.active { display: flex; }
+
+    .channel-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      grid-template-rows: auto auto;
+      gap: 14px;
+      justify-items: center; align-items: center;
+      padding: 10px 0; width: 100%;
+    }
+    .channel-card {
+      width: 90px; height: 90px;
+      background: rgba(255,255,255,0.12);
+      backdrop-filter: blur(2px);
+      border-radius: 28px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 8px rgba(0,0,0,0.4);
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+      cursor: pointer; transition: 0.15s;
+      border: 1px solid rgba(255,255,255,0.15);
+      color: #dce6f0; font-weight: bold;
+    }
+    .channel-card:hover { background: rgba(255,255,255,0.2); transform: scale(1.02); }
+    .channel-card:active { transform: scale(0.96); }
+
+    .card-sky { } .card-mint { } .card-green { } .card-peach { } .card-lavender { } .card-rose { } .card-warmyellow { }
+
+    .screen-status {
+      text-align: center;
+      margin: 10px 0 5px;
+      font-size: 0.9rem; color: #7f9aa8;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      letter-spacing: 0.5px;
+    }
+    .green-dot {
+      width: 8px; height: 8px;
+      background: #2ecc40; border-radius: 50%;
+      box-shadow: 0 0 6px #2ecc40;
+    }
+
+    .animation-area {
+      flex: 1; position: relative; min-height: 200px; margin-top: 5px; overflow: hidden; border-radius: 16px;
+    }
+    .animation-area canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: block; }
+    .floating-texts { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+    .float-text {
+      position: absolute; font-size: 0.95rem;
+      color: rgba(180, 220, 255, 0.9); text-shadow: 0 0 8px rgba(100, 180, 255, 0.6);
+      font-weight: bold; white-space: nowrap; opacity: 0; transition: opacity 0.8s ease;
+    }
+
+    .retro-card {
+      background: rgba(20, 30, 45, 0.7); border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 20px; padding: 16px; margin-bottom: 12px; color: #bcd5f0;
+    }
+    .retro-card h3 { font-size: 1rem; margin-bottom: 8px; color: #d5e8ff; }
+    .big-number { font-size: 1.8rem; font-weight: bold; color: #fff; }
+    .trend-down { color: #6f6; }
+
+    .back-btn {
+      background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.25);
+      padding: 6px 16px; border-radius: 20px; color: #bcd5f0; cursor: pointer;
+      margin-bottom: 12px; display: inline-block; font-weight: bold;
+    }
+    .back-btn:hover { background: rgba(255,255,255,0.2); }
+
+    .btn-sm {
+      background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.2);
+      padding: 4px 12px; border-radius: 16px; color: white; cursor: pointer; font-weight: bold; font-size: 0.85rem;
+    }
+    .btn-sm:hover { background: rgba(255,255,255,0.25); }
+
+    .retro-table { width: 100%; border-collapse: collapse; color: #c5d8f0; }
+    .retro-table th { text-align: left; padding: 6px 4px; border-bottom: 1px solid rgba(255,255,255,0.2); }
+    .retro-table td { padding: 6px 4px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+
+    .tag {
+      background: rgba(255,255,255,0.2); padding: 2px 8px; border-radius: 12px; font-size: 0.8rem;
+    }
+
+    .modal {
+      display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.3); backdrop-filter: blur(4px);
+      align-items: center; justify-content: center; z-index: 200;
+    }
+    .modal.active { display: flex; }
+    .modal-box {
+      background: #2a3440; border: 2px solid #5a6a7a; border-radius: 30px;
+      padding: 24px; width: 340px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); color: #d0e0ff; text-align: center;
+    }
+    .progress-bar { height: 8px; background: rgba(255,255,255,0.2); border-radius: 4px; margin: 16px 0; overflow: hidden; }
+    .progress-fill { height: 100%; background: #5b8caf; width: 0%; transition: width 0.5s; }
+
+    .toast {
+      position: fixed; bottom: 80px; right: 20px;
+      background: #1e2b3a; color: #d0e0ff; padding: 10px 20px; border-radius: 20px;
+      font-weight: bold; z-index: 300; animation: toastFade 2.4s forwards;
+      border: 1px solid rgba(255,255,255,0.3);
+    }
+    @keyframes toastFade {
+      0% { opacity: 0; transform: translateY(8px); }
+      15% { opacity: 1; transform: translateY(0); }
+      85% { opacity: 1; }
+      100% { opacity: 0; }
+    }
+
+    .target-progress { width: 100%; height: 8px; background: #2a3a4a; border-radius: 4px; margin: 6px 0; overflow: hidden; }
+    .target-progress-fill { height: 100%; background: #e6b870; border-radius: 4px; transition: width 0.3s; }
+
+    .channel-card.crt-card {
+      background: transparent !important; backdrop-filter: none !important;
+      border: none !important; box-shadow: none !important;
+      padding: 0; display: flex; align-items: center; justify-content: center;
+      transition: transform 0.2s ease, filter 0.2s ease;
+    }
+    .crt-tv {
+      width: 72px; background: #2a2d33; border-radius: 8px; padding: 4px 4px 0 4px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.4), inset 0 2px 0 rgba(255,255,255,0.1);
+      border: 1px solid #1a1c20; position: relative; transition: all 0.2s ease;
+    }
+    .crt-tv::before, .crt-tv::after {
+      content: ''; position: absolute; bottom: -4px; width: 10px; height: 4px;
+      background: #1a1c20; border-radius: 0 0 2px 2px;
+    }
+    .crt-tv::before { left: 12px; }
+    .crt-tv::after { right: 12px; }
+    .crt-screen {
+      background: #000; border-radius: 6px; padding: 6px; height: 52px;
+      display: flex; align-items: center; justify-content: center;
+      position: relative; overflow: hidden;
+      box-shadow: inset 0 0 8px rgba(0,0,0,0.8), inset 0 0 2px rgba(0,0,0,0.5);
+      border: 1px solid #0a0a0a; transition: filter 0.2s ease;
+    }
+    .crt-scanlines {
+      position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+      background: repeating-linear-gradient(0deg, rgba(0,0,0,0.15) 0px, rgba(0,0,0,0.15) 2px, transparent 2px, transparent 4px);
+      pointer-events: none; z-index: 2;
+    }
+    .crt-icon {
+      font-size: 1.8rem; z-index: 1; position: relative;
+      filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5));
+    }
+    .crt-control {
+      display: flex; align-items: center; justify-content: space-between;
+      height: 16px; padding: 0 4px;
+      background: rgba(0,0,0,0.3); border-top: 1px solid rgba(255,255,255,0.08);
+      border-radius: 0 0 6px 6px; margin-top: 2px;
+    }
+    .crt-knobs { display: flex; gap: 2px; }
+    .crt-knobs::before, .crt-knobs::after {
+      content: ''; display: inline-block; width: 8px; height: 2px; background: #888; border-radius: 1px;
+    }
+    .crt-label {
+      font-size: 0.6rem; font-weight: 700; color: #e0e8f0; text-shadow: 0 1px 2px rgba(0,0,0,0.6);
+      letter-spacing: 0.3px; white-space: nowrap;
+    }
+    .crt-led { width: 5px; height: 5px; background: #ff5e3a; border-radius: 50%; box-shadow: 0 0 4px #ff5e3a; transition: box-shadow 0.2s; }
+    .card-sky .crt-screen { background: #1e3a5f; }
+    .card-mint .crt-screen { background: #1d4a3e; }
+    .card-green .crt-screen { background: #2a4a2a; }
+    .card-peach .crt-screen { background: #4a3a2e; }
+    .card-lavender .crt-screen { background: #3a2e4a; }
+    .card-rose .crt-screen { background: #4a2e3a; }
+    .card-warmyellow .crt-screen { background: #4a4a1e; }
+    .channel-card.crt-card:hover .crt-tv { transform: translateY(-2px); filter: brightness(1.1); }
+    .channel-card.crt-card:hover .crt-screen { filter: brightness(1.15); }
+    .channel-card.crt-card:hover .crt-led { box-shadow: 0 0 6px #ff5e3a, 0 0 2px #ff5e3a; }
+    .channel-card.crt-card:active .crt-tv { transform: scale(0.96); filter: brightness(0.95); }
+    .channel-card.crt-card:active .crt-screen { filter: brightness(0.9); }
+    .channel-card.crt-card:active .crt-led { box-shadow: 0 0 2px #ff5e3a; }
+
+    .game-container {
+      width: 320px; height: 480px;
+      background: rgba(10, 15, 25, 0.7); backdrop-filter: blur(8px);
+      border: 1px solid #5a6a7a; border-radius: 20px;
+      box-shadow: 0 10px 20px rgba(0,0,0,0.4);
+      display: flex; flex-direction: column; padding: 10px;
+    }
+    .game-header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 4px 8px; color: #dce6f0; font-weight: bold; font-size: 1rem;
+      text-shadow: 0 1px 3px black;
+    }
+    .game-title { letter-spacing: 1px; }
+    .game-score { font-size: 0.95rem; color: #f1c40f; }
+    .game-canvas-wrapper {
+      flex: 1; display: flex; align-items: center; justify-content: center;
+      border-radius: 12px; overflow: hidden;
+    }
+    #coinCanvas { width: 100%; height: 100%; display: block; }
+    .game-controls { display: flex; justify-content: center; padding: 6px 0; }
+
+    .demo-input-group {
+      margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between;
+    }
+    .demo-input-group label { font-size: 0.85rem; width: 40%; }
+    .demo-input-group input {
+      width: 55%; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 12px; padding: 6px 10px; color: white; font-size: 0.85rem;
+    }
+
+    .help-container {
+      position: fixed; right: 20px; top: 50%; transform: translateY(-50%); z-index: 90;
+    }
+    .help-tv-btn {
+      width: 60px; background: #2a2d33; border-radius: 8px; padding: 4px 4px 0 4px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.4), inset 0 2px 0 rgba(255,255,255,0.1);
+      border: 1px solid #1a1c20; cursor: pointer; transition: all 0.2s ease;
+      display: flex; flex-direction: column; align-items: center;
+    }
+    .help-tv-btn .crt-screen { height: 42px; width: 100%; background: #2c3e4e; }
+    .help-tv-btn .crt-icon { font-size: 1.6rem; }
+    .help-tv-btn .crt-control { height: 12px; }
+    .help-tv-btn .crt-label { font-size: 0.5rem; }
+    .help-tv-btn:hover { transform: translateY(-2px); filter: brightness(1.1); }
+    .help-panel {
+      display: none; width: 300px; background: #2a2d33; border-radius: 16px;
+      padding: 8px 8px 0 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.5), inset 0 2px 0 rgba(255,255,255,0.1);
+      border: 1px solid #1a1c20; flex-direction: column;
+    }
+    .help-panel.show { display: flex; }
+    .help-screen {
+      background: #0f1a24; border-radius: 12px; padding: 16px 12px; height: 420px;
+      display: flex; flex-direction: column;
+      box-shadow: inset 0 0 12px rgba(0,0,0,0.8); border: 1px solid #0a0a0a;
+      position: relative; overflow: hidden;
+    }
+    .help-scanlines {
+      position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+      background: repeating-linear-gradient(0deg, rgba(0,0,0,0.2) 0px, rgba(0,0,0,0.2) 2px, transparent 2px, transparent 4px);
+      pointer-events: none; z-index: 2;
+    }
+    .help-content {
+      position: relative; z-index: 1; overflow-y: auto; flex: 1;
+      color: #c5d8f0; font-size: 0.85rem; line-height: 1.6; padding-right: 4px;
+    }
+    .help-content h3 { text-align: center; margin-bottom: 16px; font-size: 1rem; color: #fff; }
+    .help-content b { color: #f1c40f; }
+    .help-close-btn {
+      position: absolute; top: 8px; right: 10px; z-index: 3;
+      background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2);
+      color: white; font-size: 0.8rem; width: 22px; height: 22px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center; cursor: pointer;
+    }
+    .help-footer {
+      background: rgba(0,0,0,0.3); border-top: 1px solid rgba(255,255,255,0.1);
+      padding: 6px; display: flex; justify-content: center; align-items: center;
+      gap: 12px; border-radius: 0 0 12px 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="flip-toggle-btn" id="flipBtn">
+    <div class="crt-tv mini">
+      <div class="crt-screen"><div class="crt-scanlines"></div><div class="crt-icon">🔄</div></div>
+      <div class="crt-control"><div class="crt-knobs"></div><div class="crt-label">翻转</div><div class="crt-led"></div></div>
+    </div>
+  </div>
+
+  <div class="flip-container" id="flipContainer">
+    <div class="flip-front">
+      <video class="video-background" id="bgVideo" autoplay loop playsinline muted>
+        <source src="openplay.mp4" type="video/mp4">
+      </video>
+      <div class="video-overlay"></div>
+
+      <div class="help-container" id="helpContainer">
+        <div class="help-tv-btn" id="helpBtn">
+          <div class="crt-screen"><div class="crt-scanlines"></div><div class="crt-icon">❓</div></div>
+          <div class="crt-control"><div class="crt-knobs"></div><div class="crt-label">帮助</div><div class="crt-led"></div></div>
+        </div>
+        <div class="help-panel" id="helpPanel">
+          <div class="help-screen">
+            <div class="help-scanlines"></div>
+            <div class="help-close-btn" id="helpCloseBtn">✕</div>
+            <div class="help-content">
+              <h3>使用指南 o(*￣▽￣*)ブ</h3>
+              <p>欢迎来到<b>消费清醒账 Pro</b>！这是一款千禧年复古风格的记账小工具，帮你管住冲动消费，攒下每一分钱～</p>
+              <p style="margin-top:12px;"><b>📬 连接邮箱</b>：支持导入账单邮件（当前为模拟体验模式）</p>
+              <p><b>📊 模拟体验</b>：一键生成模拟账单，快速体验全部功能</p>
+              <p><b>📈 消费概览</b>：查看本月支出、品类占比、订阅扣费提醒</p>
+              <p><b>📋 账单明细</b>：多维度筛选搜索消费记录，可一键加入冷静清单</p>
+              <p><b>🔁 订阅管理</b>：统一管理各类会员订阅，规划扣费节奏</p>
+              <p><b>🧘 冷静清单</b>：给冲动消费设置冷静期，告别乱花钱 (・̀ ω・́)✧</p>
+              <p><b>💰 攒钱记录</b>：放弃购买自动计入攒钱，记录每一笔省下的金额</p>
+              <p style="margin-top:12px;"><b>🕹️ 小提示</b>：左侧的金币小游戏可以摸鱼放松，分数刷新页面就会重置哦～</p>
+              <p style="margin-top:16px; text-align:center;">祝你理性消费，攒钱顺利ヾ(・ω・`)o</p>
+            </div>
+          </div>
+          <div class="help-footer">
+            <span style="font-size:0.7rem; color:#aaa;">消费清醒账 Pro</span>
+            <div class="crt-led"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="main-layout">
+        <div class="game-container">
+          <div class="game-header">
+            <span class="game-title">金币接接乐</span>
+            <span class="game-score" id="scoreDisplay">分数：0</span>
+          </div>
+          <div class="game-canvas-wrapper">
+            <canvas id="coinCanvas"></canvas>
+          </div>
+          <div class="game-controls">
+            <button class="btn-sm" id="gameToggleBtn">开始游戏</button>
+          </div>
+        </div>
+
+        <div class="bb-shell">
+          <div class="antenna"></div>
+          <div class="side-dial"></div>
+          <div class="green-led"></div>
+          <div class="bottom-keys">
+            <div class="key-btn" id="keyEmailBtn" title="连接邮箱"></div>
+            <div class="key-btn" id="keyDemoBtn" title="模拟数据"></div>
+            <div class="key-btn" id="keyHomeBtn" title="主菜单"></div>
+          </div>
+
+          <div class="screen" id="screenContainer">
+            <div id="channelView" class="screen-content active">
+              <div class="channel-grid">
+                <div class="channel-card crt-card card-sky" data-action="email"><div class="crt-tv"><div class="crt-screen"><div class="crt-scanlines"></div><div class="crt-icon">✉️</div></div><div class="crt-control"><div class="crt-knobs"></div><div class="crt-label">连接邮箱</div><div class="crt-led"></div></div></div></div>
+                <div class="channel-card crt-card card-mint" data-view="demoView"><div class="crt-tv"><div class="crt-screen"><div class="crt-scanlines"></div><div class="crt-icon">📊</div></div><div class="crt-control"><div class="crt-knobs"></div><div class="crt-label">模拟体验</div><div class="crt-led"></div></div></div></div>
+                <div class="channel-card crt-card card-green" data-view="dashboardView"><div class="crt-tv"><div class="crt-screen"><div class="crt-scanlines"></div><div class="crt-icon">📈</div></div><div class="crt-control"><div class="crt-knobs"></div><div class="crt-label">消费概览</div><div class="crt-led"></div></div></div></div>
+                <div class="channel-card crt-card card-peach" data-view="billsView"><div class="crt-tv"><div class="crt-screen"><div class="crt-scanlines"></div><div class="crt-icon">📋</div></div><div class="crt-control"><div class="crt-knobs"></div><div class="crt-label">账单明细</div><div class="crt-led"></div></div></div></div>
+                <div class="channel-card crt-card card-lavender" data-view="subsView"><div class="crt-tv"><div class="crt-screen"><div class="crt-scanlines"></div><div class="crt-icon">🔁</div></div><div class="crt-control"><div class="crt-knobs"></div><div class="crt-label">订阅管理</div><div class="crt-led"></div></div></div></div>
+                <div class="channel-card crt-card card-rose" data-view="cooldownView"><div class="crt-tv"><div class="crt-screen"><div class="crt-scanlines"></div><div class="crt-icon">🧘</div></div><div class="crt-control"><div class="crt-knobs"></div><div class="crt-label">冷静清单</div><div class="crt-led"></div></div></div></div>
+                <div class="channel-card crt-card card-warmyellow" data-view="savingsView"><div class="crt-tv"><div class="crt-screen"><div class="crt-scanlines"></div><div class="crt-icon">💰</div></div><div class="crt-control"><div class="crt-knobs"></div><div class="crt-label">攒钱记录</div><div class="crt-led"></div></div></div></div>
+              </div>
+              <div class="screen-status"><div class="green-dot"></div> 就绪</div>
+              <div class="animation-area">
+                <canvas id="flowCanvas"></canvas>
+                <div class="floating-texts">
+                  <span class="float-text" id="floatText1"></span>
+                  <span class="float-text" id="floatText2"></span>
+                  <span class="float-text" id="floatText3"></span>
+                </div>
+              </div>
+            </div>
+
+            <div id="demoView" class="screen-content">
+              <div class="back-btn" data-back="channelView">← 返回主菜单</div>
+              <div class="retro-card">
+                <h3>📊 财务模拟器</h3>
+                <p style="font-size:0.85rem; color:#8ea4c0;">填入你的预算，看看未来会发生什么～</p>
+                <div class="demo-input-group"><label>💵 月收入</label><input type="number" id="demoIncome" placeholder="例如 8000"></div>
+                <div class="demo-input-group"><label>🍜 月支出预算</label><input type="number" id="demoExpense" placeholder="例如 5000"></div>
+                <div class="demo-input-group"><label>📈 投资金额</label><input type="number" id="demoInvest" placeholder="例如 2000"></div>
+                <div class="demo-input-group"><label>🎯 储蓄目标</label><input type="number" id="demoGoal" placeholder="例如 10000"></div>
+                <button class="btn-sm" id="runSimulationBtn" style="margin-top:12px; width:100%;">🔮 开始模拟</button>
+              </div>
+              <div class="retro-card" id="simulationResult" style="display:none;">
+                <h3>🔮 模拟结果</h3>
+                <div id="simOutput"></div>
+              </div>
+            </div>
+
+            <div id="dashboardView" class="screen-content">
+              <div class="back-btn" data-back="channelView">← 返回主菜单</div>
+              <div class="retro-card"><h3>📊 本月消费概览</h3><div style="display:flex; gap:20px;"><div><span style="color:#8ea4c0;">总支出</span><br><span class="big-number">¥4,286</span><span class="trend-down"> ↓12%</span></div><div><span style="color:#8ea4c0;">较上月</span><br><span class="big-number">-¥584</span></div></div></div>
+              <div class="retro-card"><h3>📈 平台排行</h3><div>淘宝 ¥1,530 · 美团 ¥890 · 京东 ¥620</div></div>
+              <div class="retro-card"><h3>🍔 品类占比</h3><div>服饰 30% · 餐饮 22% · 数码 18% · 其他 30%</div></div>
+              <div class="retro-card" style="cursor:pointer;" id="subscriptionAlert">🔔 检测到订阅扣费：腾讯视频VIP ¥25，已扣费2次 → 查看</div>
+            </div>
+
+            <div id="billsView" class="screen-content">
+              <div class="back-btn" data-back="channelView">← 返回主菜单</div>
+              <div style="display:flex; gap:10px; margin-bottom:12px; flex-wrap:wrap; align-items:center;">
+                <select id="platformFilter" class="btn-sm"><option value="all">全部平台</option><option value="淘宝">淘宝</option><option value="美团">美团</option><option value="京东">京东</option><option value="Apple">Apple</option></select>
+                <select id="categoryFilter" class="btn-sm"><option value="all">全部分类</option><option value="服饰">服饰</option><option value="餐饮">餐饮</option><option value="数码">数码</option><option value="娱乐">娱乐</option></select>
+                <input type="text" id="searchInput" placeholder="搜索..." class="btn-sm" style="flex:1;">
+                <button class="btn-sm" id="manualBillBtn">＋ 手动输入</button>
+              </div>
+              <table class="retro-table"><thead><tr><th>来源</th><th>商家</th><th>金额</th><th>分类</th><th>日期</th><th></th></tr></thead><tbody id="billsTableBody"></tbody></table>
+            </div>
+
+            <div id="subsView" class="screen-content">
+              <div class="back-btn" data-back="channelView">← 返回主菜单</div>
+              <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(200px,1fr)); gap:12px;" id="subsGrid"></div>
+            </div>
+
+            <div id="cooldownView" class="screen-content">
+              <div class="back-btn" data-back="channelView">← 返回主菜单</div>
+              <div style="margin-bottom:12px; text-align:right;"><button class="btn-sm" id="manualCooldownBtn">＋ 手动输入</button></div>
+              <div id="cooldownGrid" style="display:flex; flex-direction:column; gap:12px;"></div>
+            </div>
+
+            <div id="savingsView" class="screen-content">
+              <div class="back-btn" data-back="channelView">← 返回主菜单</div>
+              <div class="retro-card"><h3>💰 累计已攒金额</h3><div class="big-number" id="totalSavings">¥0.00</div><div style="font-size:0.85rem; margin-top:6px;">已完成目标：<span id="completedTargets">0</span> 个 &nbsp;|&nbsp; 本月新增：<span id="monthlySavings">¥0.00</span></div></div>
+              <div class="retro-card"><div style="display:flex; justify-content:space-between;"><h3>🎯 攒钱目标</h3><button class="btn-sm" id="addTargetBtn">＋ 新增目标</button></div><div id="savingsTargetContainer" style="margin-top:12px;"></div></div>
+              <div class="retro-card" style="flex:1; display:flex; flex-direction:column;"><h3>📋 攒钱明细</h3><div id="savingsListContainer" style="flex:1; overflow-y:auto; max-height:180px;"><p style="color:#7f9aa8;">暂无攒钱记录</p></div></div>
+              <div style="display:flex; gap:10px; margin-top:12px;"><button class="btn-sm" id="manualSavingsBtn" style="flex:1;">💵 手动攒钱</button><button class="btn-sm" id="toggleHistoryBtn" style="flex:1;">📜 查看历史目标</button></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="emailModal" class="modal"><div class="modal-box"><h3>📬 连接邮箱</h3><p>正在安全扫描订单邮件...</p><div class="progress-bar"><div id="progressFill" class="progress-fill"></div></div><p id="modalStatus">已解析 0 封订单</p></div></div>
+      <div id="targetModal" class="modal"><div class="modal-box"><h3>🎯 新增攒钱目标</h3><input type="text" id="targetNameInput" placeholder="目标名称" class="btn-sm" style="width:100%; margin:12px 0;"><input type="number" id="targetAmountInput" placeholder="目标金额" class="btn-sm" style="width:100%; margin-bottom:12px;"><div style="display:flex; gap:10px; justify-content:flex-end;"><button class="btn-sm" id="cancelTargetBtn">取消</button><button class="btn-sm" id="confirmTargetBtn" style="background:#5b8caf;">确认</button></div></div></div>
+      <div id="manualModal" class="modal"><div class="modal-box"><h3>💵 手动攒钱</h3><input type="number" id="manualAmountInput" placeholder="金额" class="btn-sm" style="width:100%; margin:12px 0;"><input type="text" id="manualNoteInput" placeholder="备注（可选）" class="btn-sm" style="width:100%; margin-bottom:12px;"><select id="manualTargetSelect" class="btn-sm" style="width:100%; margin-bottom:12px;"><option value="">不关联目标</option></select><div style="display:flex; gap:10px; justify-content:flex-end;"><button class="btn-sm" id="cancelManualBtn">取消</button><button class="btn-sm" id="confirmManualBtn" style="background:#5b8caf;">确认</button></div></div></div>
+      <div id="manualBillModal" class="modal"><div class="modal-box"><h3>📋 添加消费记录</h3><input type="text" id="billMerchantInput" placeholder="商家名称" class="btn-sm" style="width:100%; margin:12px 0;"><input type="number" id="billAmountInput" placeholder="金额" class="btn-sm" style="width:100%; margin-bottom:12px;"><select id="billCategoryInput" class="btn-sm" style="width:100%; margin-bottom:12px;"><option value="服饰">服饰</option><option value="餐饮">餐饮</option><option value="数码">数码</option><option value="娱乐">娱乐</option><option value="其他">其他</option></select><input type="text" id="billPlatformInput" placeholder="平台（淘宝/美团/京东...）" class="btn-sm" style="width:100%; margin-bottom:12px;"><div style="display:flex; gap:10px; justify-content:flex-end;"><button class="btn-sm" id="cancelBillBtn">取消</button><button class="btn-sm" id="confirmBillBtn" style="background:#5b8caf;">确认</button></div></div></div>
+      <div id="manualCooldownModal" class="modal"><div class="modal-box"><h3>🧘 添加冷静项目</h3><input type="text" id="cooldownNameInput" placeholder="商品名称" class="btn-sm" style="width:100%; margin:12px 0;"><input type="number" id="cooldownPriceInput" placeholder="价格" class="btn-sm" style="width:100%; margin-bottom:12px;"><div style="display:flex; gap:10px; justify-content:flex-end;"><button class="btn-sm" id="cancelCooldownBtn">取消</button><button class="btn-sm" id="confirmCooldownBtn" style="background:#5b8caf;">确认</button></div></div></div>
+    </div>
+
+    <!-- 背面：只保留消费电台和消费手账 -->
+    <div class="flip-back">
+      <div class="back-bg"></div>
+      <div class="back-content">
+        <div class="back-header">
+          <div class="crt-tv" style="width:100px; margin:0 auto;">
+            <div class="crt-screen dark" style="height:70px;"><div class="crt-scanlines"></div><div class="crt-icon" style="font-size:2rem;">✨</div></div>
+            <div class="crt-control"><div class="crt-knobs"></div><div class="crt-label">隐藏功能</div><div class="crt-led"></div></div>
+          </div>
+          <div class="screen-status" style="margin-top:12px;"><div class="green-dot"></div> 彩蛋模式</div>
+        </div>
+        <div class="new-features-grid">
+          <!-- 消费电台 -->
+          <div class="feature-card card-peach">
+            <h4>📻 消费电台</h4>
+            <div class="card-body">
+              <div class="radio-container">
+                <div class="radio-display">
+                  <span id="radioSong">千禧年金曲 FM 97.5</span>
+                </div>
+                <div class="radio-frequency">
+                  <span id="radioFreqDisplay">97.5</span> MHz
+                </div>
+                <div class="radio-controls">
+                  <button class="radio-btn" id="radioToggleBtn">▶ 播放</button>
+                  <button class="radio-btn" id="radioNextBtn">⏭ 下一首</button>
+                  <input type="range" id="radioFreqSlider" class="radio-freq-slider" min="87.0" max="108.0" value="97.5" step="0.1">
+                </div>
+                <canvas class="radio-visualizer" id="radioVisualizer" width="300" height="60"></canvas>
+                <div class="radio-tip" id="radioTip">理性消费，从记账开始。</div>
+              </div>
+            </div>
+          </div>
+          <!-- 消费手账 -->
+          <div class="feature-card card-rose">
+            <h4>📜 消费手账</h4>
+            <div class="card-body">
+              <div class="journal-container">
+                <div class="journal-canvas-wrapper">
+                  <canvas id="journalCanvas" width="320" height="400"></canvas>
+                </div>
+                <div class="journal-actions">
+                  <button class="radio-btn" id="generateJournalBtn">🖼 生成手账</button>
+                  <button class="radio-btn" id="downloadJournalBtn" style="display:none;">⬇ 保存图片</button>
+                  <button class="radio-btn" id="shareJournalBtn" style="display:none;">📤 分享</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="back-btn flip-back-btn" id="flipBackBtn">← 回到主界面</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ========== 原有所有 JS 逻辑（完全保留，不修改） ==========
+    (function() {
+      const bgVideo = document.getElementById('bgVideo');
+      document.addEventListener('click', function enableSound() {
+        if (bgVideo.muted) { bgVideo.muted = false; bgVideo.volume = 0.5; if (bgVideo.paused) bgVideo.play().catch(() => {}); }
+      }, { once: true });
+
+      let allBills = [
+        { source:'📬', merchant:'淘宝-服饰旗舰店', amount:299, category:'服饰', date:'2026-06-24', platform:'淘宝' },
+        { source:'📬', merchant:'美团外卖-川味馆', amount:48, category:'餐饮', date:'2026-06-23', platform:'美团' },
+        { source:'✋', merchant:'京东-数码专营', amount:1299, category:'数码', date:'2026-06-20', platform:'京东' },
+        { source:'📬', merchant:'Apple Music', amount:15, category:'娱乐', date:'2026-06-19', platform:'Apple' },
+        { source:'📬', merchant:'淘宝-杂货铺', amount:86, category:'其他', date:'2026-06-18', platform:'淘宝' },
+        { source:'📬', merchant:'美团-奶茶店', amount:32, category:'餐饮', date:'2026-06-17', platform:'美团' },
+        { source:'📬', merchant:'京东-图书旗舰', amount:120, category:'其他', date:'2026-06-15', platform:'京东' },
+        { source:'✋', merchant:'线下超市', amount:210, category:'餐饮', date:'2026-06-14', platform:'线下' },
+      ];
+      const subscriptions = [
+        { name:'腾讯视频VIP', amount:25, cycle:'每月', nextDate:'2026-07-01' },
+        { name:'iCloud+', amount:6, cycle:'每月', nextDate:'2026-06-28' },
+        { name:'京东PLUS', amount:99, cycle:'每年', nextDate:'2026-12-01' },
+        { name:'健身App月卡', amount:19, cycle:'每月', nextDate:'2026-06-27' },
+      ];
+      let cooldownItems = [
+        { name:'新款机械键盘', price:899, addedDate:'2026-06-18', period:14, id:1 },
+        { name:'蓝牙降噪耳机', price:1299, addedDate:'2026-06-20', period:30, id:2 },
+      ];
+
+      let savingsData = [];
+      let savingTargets = [];
+      let savingsIdCounter = 1;
+      let targetIdCounter = 1;
+      let showHistoryTargets = false;
+
+      const views = ['channelView','dashboardView','billsView','subsView','cooldownView','savingsView','demoView'];
+      function switchView(viewId) {
+        document.querySelectorAll('.screen-content').forEach(v => v.classList.remove('active'));
+        const target = document.getElementById(viewId);
+        if (target) target.classList.add('active');
+        if (viewId === 'savingsView') { renderSavingTargets(); renderSavingsList(); updateTotalSavings(); }
+      }
+
+      document.querySelectorAll('.back-btn').forEach(btn => {
+        btn.addEventListener('click', () => switchView(btn.dataset.back));
+      });
+
+      document.querySelectorAll('.channel-card').forEach(card => {
+        card.addEventListener('click', function() {
+          const action = this.dataset.action;
+          const view = this.dataset.view;
+          if (action === 'email') simulateEmailScan(() => switchView('dashboardView'));
+          else if (view) switchView(view);
+        });
+      });
+
+      document.getElementById('keyEmailBtn').addEventListener('click', () => simulateEmailScan(() => switchView('dashboardView')));
+      document.getElementById('keyDemoBtn').addEventListener('click', () => switchView('demoView'));
+      document.getElementById('keyHomeBtn').addEventListener('click', () => switchView('channelView'));
+
+      const modal = document.getElementById('emailModal');
+      const progressFill = document.getElementById('progressFill');
+      const modalStatus = document.getElementById('modalStatus');
+      function simulateEmailScan(callback) {
+        modal.classList.add('active'); progressFill.style.width = '0%';
+        modalStatus.textContent = '正在扫描历史订单邮件...';
+        let progress = 0;
+        const interval = setInterval(() => {
+          progress += Math.random() * 25 + 10;
+          if (progress >= 100) {
+            progress = 100; clearInterval(interval);
+            modalStatus.textContent = `解析完成，共找到 ${allBills.length} 笔记录`;
+            setTimeout(() => { modal.classList.remove('active'); if (callback) callback(); }, 700);
+          } else {
+            modalStatus.textContent = `已解析 ${Math.floor(progress/100 * allBills.length)} 封订单`;
+          }
+          progressFill.style.width = progress + '%';
+        }, 400);
+      }
+
+      document.getElementById('subscriptionAlert').addEventListener('click', () => switchView('subsView'));
+
+      const tbody = document.getElementById('billsTableBody');
+      function renderBills(filtered) {
+        tbody.innerHTML = filtered.map(b => `<tr><td><span class="tag">${b.source}</span></td><td>${b.merchant}</td><td>¥${b.amount}</td><td>${b.category}</td><td>${b.date}</td><td><button class="btn-sm add-cooldown" data-name="${b.merchant}" data-price="${b.amount}">🧘 冷静</button></td></tr>`).join('');
+        document.querySelectorAll('.add-cooldown').forEach(btn => {
+          btn.addEventListener('click', function() {
+            const name = this.dataset.name;
+            const price = parseFloat(this.dataset.price);
+            cooldownItems.push({ name, price, addedDate: new Date().toISOString().slice(0,10), period:14, id:Date.now() });
+            renderCooldown();
+            showToast(`已加入冷静清单：${name}`);
+          });
+        });
+      }
+      function filterBills() {
+        const platform = document.getElementById('platformFilter').value;
+        const category = document.getElementById('categoryFilter').value;
+        const search = document.getElementById('searchInput').value.toLowerCase();
+        return allBills.filter(b => (platform==='all'||b.platform===platform) && (category==='all'||b.category===category) && (b.merchant.toLowerCase().includes(search)||b.category.includes(search)));
+      }
+      function updateBills() { renderBills(filterBills()); }
+      document.getElementById('platformFilter').addEventListener('change', updateBills);
+      document.getElementById('categoryFilter').addEventListener('change', updateBills);
+      document.getElementById('searchInput').addEventListener('input', updateBills);
+      updateBills();
+
+      document.getElementById('manualBillBtn').addEventListener('click', () => document.getElementById('manualBillModal').classList.add('active'));
+      document.getElementById('cancelBillBtn').addEventListener('click', () => document.getElementById('manualBillModal').classList.remove('active'));
+      document.getElementById('confirmBillBtn').addEventListener('click', () => {
+        const merchant = document.getElementById('billMerchantInput').value.trim();
+        const amount = parseFloat(document.getElementById('billAmountInput').value);
+        const category = document.getElementById('billCategoryInput').value;
+        const platform = document.getElementById('billPlatformInput').value.trim() || '其他';
+        if (!merchant || isNaN(amount) || amount <= 0) { showToast('请输入有效的商家和金额'); return; }
+        allBills.push({ source:'✋', merchant, amount, category, date: new Date().toISOString().slice(0,10), platform });
+        document.getElementById('manualBillModal').classList.remove('active');
+        document.getElementById('billMerchantInput').value = '';
+        document.getElementById('billAmountInput').value = '';
+        document.getElementById('billPlatformInput').value = '';
+        updateBills();
+        showToast(`已添加消费：${merchant} ¥${amount}`);
+      });
+
+      function calcDaysLeft(added, period) { const end = new Date(added).getTime() + period*86400000; return Math.max(0, Math.ceil((end - Date.now())/86400000)); }
+      const cooldownGrid = document.getElementById('cooldownGrid');
+      function renderCooldown() {
+        cooldownGrid.innerHTML = cooldownItems.map(item => {
+          const left = calcDaysLeft(item.addedDate, item.period);
+          const pct = Math.min(100, Math.round((item.period - left)/item.period*100));
+          return `<div class="retro-card" style="display:flex; justify-content:space-between; align-items:center;"><div><strong>${item.name}</strong> · ¥${item.price}<br><small>剩余 ${left} 天 / ${item.period} 天</small><div style="width:120px; height:6px; background:#2a3a4a; border-radius:3px; margin-top:4px;"><div style="width:${pct}%; height:100%; background:#5b8caf; border-radius:3px;"></div></div></div><div><button class="btn-sm confirm-btn" data-id="${item.id}">确认购买</button><button class="btn-sm extend-btn" data-id="${item.id}">再冷静</button><button class="btn-sm abandon-btn" data-id="${item.id}">放弃</button></div></div>`;
+        }).join('');
+        document.querySelectorAll('.confirm-btn').forEach(b => { b.addEventListener('click', function(){ const id = parseInt(this.dataset.id); const item = cooldownItems.find(i=>i.id===id); showToast(`确认购买 ${item.name}`); cooldownItems = cooldownItems.filter(i=>i.id!==id); renderCooldown(); }); });
+        document.querySelectorAll('.extend-btn').forEach(b => { b.addEventListener('click', function(){ const id = parseInt(this.dataset.id); const item = cooldownItems.find(i=>i.id===id); item.period += 7; showToast('冷静期延长7天'); renderCooldown(); }); });
+        document.querySelectorAll('.abandon-btn').forEach(b => { b.addEventListener('click', function(){ const id = parseInt(this.dataset.id); const item = cooldownItems.find(i=>i.id===id); if (item) { addSavings(item.price, 'auto', '放弃购买：' + item.name, null); showToast(`放弃购买，省下 ¥${item.price}，已计入攒钱记录`); } cooldownItems = cooldownItems.filter(i=>i.id!==id); renderCooldown(); }); });
+      }
+      renderCooldown();
+
+      document.getElementById('manualCooldownBtn').addEventListener('click', () => document.getElementById('manualCooldownModal').classList.add('active'));
+      document.getElementById('cancelCooldownBtn').addEventListener('click', () => document.getElementById('manualCooldownModal').classList.remove('active'));
+      document.getElementById('confirmCooldownBtn').addEventListener('click', () => {
+        const name = document.getElementById('cooldownNameInput').value.trim();
+        const price = parseFloat(document.getElementById('cooldownPriceInput').value);
+        if (!name || isNaN(price) || price <= 0) { showToast('请输入有效的商品名称和价格'); return; }
+        cooldownItems.push({ name, price, addedDate: new Date().toISOString().slice(0,10), period:14, id:Date.now() });
+        document.getElementById('manualCooldownModal').classList.remove('active');
+        document.getElementById('cooldownNameInput').value = '';
+        document.getElementById('cooldownPriceInput').value = '';
+        renderCooldown();
+        showToast(`已添加冷静项目：${name} ¥${price}`);
+      });
+
+      const subsGrid = document.getElementById('subsGrid');
+      function renderSubs() {
+        subsGrid.innerHTML = subscriptions.map(s => `<div class="retro-card"><h3>${s.name}</h3><div>💰 ${s.amount}元 / ${s.cycle}</div><div style="color:#f88;">⏰ 下次扣费：${s.nextDate}</div><div style="margin-top:8px;"><button class="btn-sm keep-btn">保留</button><button class="btn-sm cancel-btn">去取消</button></div></div>`).join('');
+        document.querySelectorAll('.keep-btn').forEach(b => b.addEventListener('click', ()=> showToast('已保留订阅')));
+        document.querySelectorAll('.cancel-btn').forEach(b => b.addEventListener('click', function(){ const name = this.closest('.retro-card').querySelector('h3').textContent; showToast(`请手动取消：${name}`); }));
+      }
+      renderSubs();
+
+      function addSavings(amount, type, note, targetId) { const record = { id: savingsIdCounter++, amount: parseFloat(amount), type, note: note || '', date: new Date().toISOString().slice(0,10), targetId: targetId || null }; savingsData.push(record); if (targetId) updateTargetSavedAmount(targetId); renderSavingsList(); updateTotalSavings(); }
+      function addSavingTarget(name, targetAmount) { const target = { id: targetIdCounter++, name, targetAmount: parseFloat(targetAmount), savedAmount: 0, status: 'active', createdAt: new Date().toISOString().slice(0,10) }; savingTargets.push(target); renderSavingTargets(); }
+      function updateTargetSavedAmount(targetId) { const target = savingTargets.find(t => t.id === targetId); if (!target) return; const totalSaved = savingsData.filter(r => r.targetId === targetId).reduce((sum, r) => sum + r.amount, 0); target.savedAmount = totalSaved; if (target.status === 'active' && totalSaved >= target.targetAmount) { target.status = 'completed'; showToast(`🎉 目标“${target.name}”已完成！`); } }
+      function updateTotalSavings() { const total = savingsData.reduce((sum, r) => sum + r.amount, 0); const el = document.getElementById('totalSavings'); if (el) el.textContent = '¥' + total.toFixed(2); const compEl = document.getElementById('completedTargets'); if (compEl) compEl.textContent = savingTargets.filter(t => t.status === 'completed').length; const now = new Date(); const thisMonth = now.getMonth(); const thisYear = now.getFullYear(); const monthTotal = savingsData.filter(r => { const d = new Date(r.date); return d.getFullYear() === thisYear && d.getMonth() === thisMonth; }).reduce((sum, r) => sum + r.amount, 0); const monthEl = document.getElementById('monthlySavings'); if (monthEl) monthEl.textContent = '¥' + monthTotal.toFixed(2); }
+      function renderSavingTargets() { const container = document.getElementById('savingsTargetContainer'); if (!container) return; if (showHistoryTargets) { const history = savingTargets.filter(t => t.status !== 'active'); if (history.length === 0) container.innerHTML = '<p style="color:#7f9aa8;">暂无历史目标</p>'; else container.innerHTML = history.map(t => { const progress = t.targetAmount > 0 ? Math.min(100, (t.savedAmount / t.targetAmount) * 100) : 0; return `<div style="margin-bottom:12px; opacity:0.8;"><div style="display:flex; justify-content:space-between;"><strong>${t.name} (${t.status === 'completed' ? '已完成' : '已放弃'})</strong><span>¥${t.savedAmount.toFixed(2)} / ¥${t.targetAmount.toFixed(2)}</span></div><div class="target-progress"><div class="target-progress-fill" style="width:${progress}%;"></div></div></div>`; }).join(''); return; } const activeTargets = savingTargets.filter(t => t.status === 'active'); if (activeTargets.length === 0) container.innerHTML = '<p style="color:#7f9aa8;">暂无进行中的目标</p>'; else container.innerHTML = activeTargets.map(t => { const saved = t.savedAmount || 0; const progress = t.targetAmount > 0 ? Math.min(100, (saved / t.targetAmount) * 100) : 0; return `<div style="margin-bottom:12px;"><div style="display:flex; justify-content:space-between;"><strong>${t.name}</strong><span>¥${saved.toFixed(2)} / ¥${t.targetAmount.toFixed(2)}</span></div><div class="target-progress"><div class="target-progress-fill" style="width:${progress}%;"></div></div><div style="font-size:0.8rem; color:#8ea4c0;">剩余 ¥${(t.targetAmount - saved).toFixed(2)}</div></div>`; }).join(''); }
+      function renderSavingsList() { const container = document.getElementById('savingsListContainer'); if (!container) return; const records = [...savingsData].sort((a,b) => new Date(b.date) - new Date(a.date)); if (records.length === 0) container.innerHTML = '<p style="color:#7f9aa8;">暂无攒钱记录</p>'; else container.innerHTML = records.map(r => { const typeLabel = r.type === 'auto' ? '冷静放弃' : '手动添加'; return `<div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid rgba(255,255,255,0.08);"><div><span class="tag">${typeLabel}</span><span style="margin-left:6px;">${r.note || '攒钱'}</span></div><div style="text-align:right;"><span style="font-weight:bold; color:#6f6;">+¥${r.amount.toFixed(2)}</span><div style="font-size:0.7rem; color:#8ea4c0;">${r.date}</div></div></div>`; }).join(''); }
+      function updateManualTargetSelect() { const select = document.getElementById('manualTargetSelect'); if (!select) return; select.innerHTML = '<option value="">不关联目标</option>' + savingTargets.filter(t => t.status === 'active').map(t => `<option value="${t.id}">${t.name}</option>`).join(''); }
+
+      document.getElementById('addTargetBtn').addEventListener('click', () => document.getElementById('targetModal').classList.add('active'));
+      document.getElementById('cancelTargetBtn').addEventListener('click', () => document.getElementById('targetModal').classList.remove('active'));
+      document.getElementById('confirmTargetBtn').addEventListener('click', () => { const name = document.getElementById('targetNameInput').value.trim(); const amount = parseFloat(document.getElementById('targetAmountInput').value); if (!name || isNaN(amount) || amount <= 0) { showToast('请输入有效的目标名称和金额'); return; } addSavingTarget(name, amount); document.getElementById('targetModal').classList.remove('active'); document.getElementById('targetNameInput').value = ''; document.getElementById('targetAmountInput').value = ''; updateManualTargetSelect(); showToast(`目标“${name}”已创建`); });
+      document.getElementById('manualSavingsBtn').addEventListener('click', () => { updateManualTargetSelect(); document.getElementById('manualModal').classList.add('active'); });
+      document.getElementById('cancelManualBtn').addEventListener('click', () => document.getElementById('manualModal').classList.remove('active'));
+      document.getElementById('confirmManualBtn').addEventListener('click', () => { const amount = parseFloat(document.getElementById('manualAmountInput').value); const note = document.getElementById('manualNoteInput').value.trim(); const targetId = document.getElementById('manualTargetSelect').value || null; if (isNaN(amount) || amount <= 0) { showToast('请输入有效金额'); return; } addSavings(amount, 'manual', note || '手动攒钱', targetId ? parseInt(targetId) : null); document.getElementById('manualModal').classList.remove('active'); document.getElementById('manualAmountInput').value = ''; document.getElementById('manualNoteInput').value = ''; showToast(`成功攒钱 ¥${amount.toFixed(2)}`); renderSavingTargets(); });
+      document.getElementById('toggleHistoryBtn').addEventListener('click', () => { showHistoryTargets = !showHistoryTargets; document.getElementById('toggleHistoryBtn').textContent = showHistoryTargets ? '📜 返回当前目标' : '📜 查看历史目标'; renderSavingTargets(); });
+
+      renderSavingsList(); updateTotalSavings(); renderSavingTargets();
+
+      function showToast(msg) { const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg; document.body.appendChild(t); setTimeout(()=>t.remove(), 2500); }
+
+      document.getElementById('runSimulationBtn').addEventListener('click', () => {
+        const income = parseFloat(document.getElementById('demoIncome').value) || 0;
+        const expense = parseFloat(document.getElementById('demoExpense').value) || 0;
+        const invest = parseFloat(document.getElementById('demoInvest').value) || 0;
+        const goal = parseFloat(document.getElementById('demoGoal').value) || 0;
+        const balance = income - expense;
+        const investReturn = invest * (0.8 + Math.random() * 0.4);
+        const riskLevel = Math.floor(Math.random() * 5) + 1;
+        const monthsToGoal = goal > 0 ? Math.ceil(goal / (balance + investReturn * 0.3)) : '∞';
+        const emojis = ['😊','🤔','😨','🎉','💸'];
+        const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
+        document.getElementById('simOutput').innerHTML = `<p>💰 月结余：<strong>¥${balance.toFixed(2)}</strong></p><p>📈 投资预期回报：<strong>¥${investReturn.toFixed(2)}</strong></p><p>⚠️ 风险评估：<strong>${'🔴'.repeat(riskLevel)}${'⚪'.repeat(5-riskLevel)}</strong></p><p>🎯 达成储蓄目标预计：<strong>${monthsToGoal} 个月</strong></p><p>${randomEmoji} 财务运势：<strong>${balance > 0 ? '良好' : '需谨慎'}</strong></p>`;
+        document.getElementById('simulationResult').style.display = 'block';
+      });
+
+      // 动画曲线
+      const canvas = document.getElementById('flowCanvas');
+      const ctx = canvas.getContext('2d');
+      const container = canvas.parentNode;
+      let width, height;
+      function resizeCanvas() { width = container.clientWidth; height = container.clientHeight; canvas.width = width; canvas.height = height; }
+      resizeCanvas(); window.addEventListener('resize', resizeCanvas);
+      const lines = [
+        { baseY: 0.3, amp: 25, freq: 0.008, phase: 0, color: 'rgba(130, 200, 230, 0.5)', width: 2.2 },
+        { baseY: 0.5, amp: 20, freq: 0.01,  phase: 1, color: 'rgba(100, 210, 180, 0.45)', width: 1.8 },
+        { baseY: 0.7, amp: 30, freq: 0.007, phase: 2, color: 'rgba(160, 220, 240, 0.4)', width: 2.5 },
+        { baseY: 0.4, amp: 18, freq: 0.012, phase: 3, color: 'rgba(110, 190, 160, 0.5)', width: 1.6 },
+        { baseY: 0.6, amp: 22, freq: 0.009, phase: 4, color: 'rgba(140, 210, 210, 0.45)', width: 2.0 },
+        { baseY: 0.2, amp: 15, freq: 0.011, phase: 5, color: 'rgba(180, 230, 250, 0.35)', width: 1.4 },
+      ];
+      function drawCurves() {
+        ctx.clearRect(0, 0, width, height);
+        ctx.shadowBlur = 8; ctx.shadowColor = 'rgba(100, 180, 255, 0.3)';
+        for (let line of lines) { ctx.beginPath(); ctx.strokeStyle = line.color; ctx.lineWidth = line.width + Math.sin(line.phase * 0.5) * 0.8; for (let x = 0; x <= width; x += 5) { const y = line.baseY * height + Math.sin(x * line.freq + line.phase) * line.amp; if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y); } ctx.stroke(); line.phase += 0.008; }
+        ctx.shadowBlur = 0; requestAnimationFrame(drawCurves);
+      }
+      drawCurves();
+
+      // 浮动文案
+      const floatTexts = [document.getElementById('floatText1'), document.getElementById('floatText2'), document.getElementById('floatText3')];
+      const textTemplates = [
+        () => `正向盈利：预计可赚金额 o(*￣▽￣*)ブ ¥${Math.floor(Math.random() * 10001)}`,
+        () => `负向亏损：预计亏损 /(ㄒoㄒ)/~~ ¥${Math.floor(Math.random() * 10001)}`,
+        () => `消费支出：决定花费 (・∀・(・∀・(・∀・*) ¥${Math.floor(Math.random() * 10001)}`
+      ];
+      let currentIndex = 0;
+      function randomPosition() { const maxX = container.clientWidth - 200; const maxY = container.clientHeight - 30; return { left: Math.random() * maxX, top: Math.random() * maxY }; }
+      function showNextText() {
+        floatTexts.forEach(t => t.style.opacity = '0');
+        currentIndex = (currentIndex + 1) % textTemplates.length;
+        const textEl = floatTexts[currentIndex];
+        const pos = randomPosition();
+        textEl.style.left = pos.left + 'px'; textEl.style.top = pos.top + 'px';
+        textEl.textContent = textTemplates[currentIndex]();
+        textEl.style.opacity = '1';
+        const moveInterval = setInterval(() => { if (textEl.style.opacity === '0') { clearInterval(moveInterval); return; } const curLeft = parseFloat(textEl.style.left); const curTop = parseFloat(textEl.style.top); textEl.style.left = (curLeft + (Math.random() - 0.5) * 2) + 'px'; textEl.style.top = (curTop + (Math.random() - 0.5) * 2) + 'px'; }, 120);
+      }
+      setInterval(showNextText, 4000);
+      setTimeout(() => { const first = floatTexts[0]; const pos = randomPosition(); first.style.left = pos.left + 'px'; first.style.top = pos.top + 'px'; first.textContent = textTemplates[0](); first.style.opacity = '1'; }, 100);
+
+      switchView('channelView');
+
+      // 暴露数据给背面功能
+      window.consumerData = { allBills, savingsData, savingTargets, subscriptions, cooldownItems };
+    })();
+
+    // 接金币小游戏 (独立)
+    (function() {
+      const canvas = document.getElementById('coinCanvas');
+      const scoreSpan = document.getElementById('scoreDisplay');
+      const toggleBtn = document.getElementById('gameToggleBtn');
+      const ctx = canvas.getContext('2d');
+      function resizeGameCanvas() { const wrapper = canvas.parentNode; canvas.width = wrapper.clientWidth; canvas.height = wrapper.clientHeight; }
+      resizeGameCanvas(); window.addEventListener('resize', resizeGameCanvas);
+      let playerX, playerY, playerWidth = 40, playerHeight = 30;
+      let coins = []; let score = 0; let gameRunning = false;
+      const coinRadius = 12, coinSpeedMin = 2.5, coinSpeedMax = 5.5;
+      function resetPlayer() { playerX = canvas.width / 2 - playerWidth / 2; playerY = canvas.height - playerHeight - 10; }
+      resetPlayer(); window.addEventListener('resize', () => { resizeGameCanvas(); resetPlayer(); });
+      function spawnCoin() { const x = coinRadius + Math.random() * (canvas.width - coinRadius * 2); const speed = coinSpeedMin + Math.random() * (coinSpeedMax - coinSpeedMin); coins.push({ x, y: -coinRadius, speed }); }
+      let spawnTimer = null;
+      function scheduleNextSpawn() { if (!gameRunning) return; const delay = 800 + Math.random() * 1400; spawnTimer = setTimeout(() => { if (gameRunning) { spawnCoin(); scheduleNextSpawn(); } }, delay); }
+      let moveLeft = false, moveRight = false;
+      document.addEventListener('keydown', (e) => { if (e.target.tagName === 'INPUT'||e.target.tagName==='TEXTAREA'||e.target.tagName==='SELECT') return; if (e.key==='ArrowLeft'){ moveLeft=true; e.preventDefault(); } if (e.key==='ArrowRight'){ moveRight=true; e.preventDefault(); } });
+      document.addEventListener('keyup', (e) => { if (e.key==='ArrowLeft') moveLeft=false; if (e.key==='ArrowRight') moveRight=false; });
+      function updatePlayer() { const speed = 6; if (moveLeft) playerX -= speed; if (moveRight) playerX += speed; if (playerX<0) playerX=0; if (playerX+playerWidth>canvas.width) playerX=canvas.width-playerWidth; }
+      function checkCollision(coin) { const pl=playerX, pr=playerX+playerWidth, pt=playerY, pb=playerY+playerHeight; const cl=coin.x-coinRadius, cr=coin.x+coinRadius, ct=coin.y-coinRadius, cb=coin.y+coinRadius; return (cr>pl && cl<pr && cb>pt && ct<pb); }
+      function gameLoop() { if (!gameRunning) { draw(); requestAnimationFrame(gameLoop); return; } updatePlayer(); for (let i=coins.length-1; i>=0; i--) { const coin=coins[i]; coin.y+=coin.speed; if (checkCollision(coin)) { score++; scoreSpan.textContent=`分数：${score}`; coins.splice(i,1); } else if (coin.y-coinRadius>canvas.height) { coins.splice(i,1); } } draw(); requestAnimationFrame(gameLoop); }
+      function draw() { ctx.clearRect(0,0,canvas.width,canvas.height); ctx.fillStyle='rgba(0,0,0,0.4)'; ctx.fillRect(0,0,canvas.width,canvas.height); coins.forEach(coin => { ctx.beginPath(); ctx.arc(coin.x,coin.y,coinRadius,0,Math.PI*2); ctx.fillStyle='#f1c40f'; ctx.fill(); ctx.strokeStyle='#d4a017'; ctx.lineWidth=2; ctx.stroke(); ctx.beginPath(); ctx.arc(coin.x-4,coin.y-4,4,0,Math.PI*2); ctx.fillStyle='rgba(255,255,255,0.6)'; ctx.fill(); }); ctx.fillStyle='#4a6fa5'; ctx.fillRect(playerX+8,playerY+10,24,20); ctx.beginPath(); ctx.arc(playerX+20,playerY+6,10,0,Math.PI*2); ctx.fillStyle='#f4d03f'; ctx.fill(); ctx.fillStyle='#111'; ctx.beginPath(); ctx.arc(playerX+16,playerY+4,2,0,Math.PI); ctx.fill(); ctx.beginPath(); ctx.arc(playerX+24,playerY+4,2,0,Math.PI); ctx.fill(); }
+      toggleBtn.addEventListener('click', () => { gameRunning=!gameRunning; if (gameRunning) { toggleBtn.textContent='暂停游戏'; spawnCoin(); scheduleNextSpawn(); } else { toggleBtn.textContent='开始游戏'; if (spawnTimer) clearTimeout(spawnTimer); } });
+      gameLoop();
+    })();
+
+    // 帮助面板 (独立)
+    (function() {
+      const helpBtn = document.getElementById('helpBtn');
+      const helpPanel = document.getElementById('helpPanel');
+      const helpCloseBtn = document.getElementById('helpCloseBtn');
+      helpBtn.addEventListener('click', () => { helpBtn.style.display = 'none'; helpPanel.classList.add('show'); });
+      helpCloseBtn.addEventListener('click', () => { helpPanel.classList.remove('show'); helpBtn.style.display = 'flex'; });
+    })();
+
+    // ========== 翻转控制逻辑 ==========
+    (function() {
+      const flipContainer = document.getElementById('flipContainer');
+      const flipBtn = document.getElementById('flipBtn');
+      const flipBackBtn = document.getElementById('flipBackBtn');
+      function toggleFlip() {
+        flipContainer.classList.toggle('flipped');
+        const bgVideo = document.getElementById('bgVideo');
+        if (bgVideo) {
+          bgVideo.volume = flipContainer.classList.contains('flipped') ? 0.2 : 0.5;
+        }
+      }
+      flipBtn.addEventListener('click', toggleFlip);
+      flipBackBtn.addEventListener('click', toggleFlip);
+      flipContainer.addEventListener('transitionstart', () => { document.body.style.overflow = 'hidden'; });
+      flipContainer.addEventListener('transitionend', () => { document.body.style.overflow = 'auto'; });
+    })();
+
+    // ========== 消费电台功能 ==========
+    (function() {
+      const radioToggleBtn = document.getElementById('radioToggleBtn');
+      const radioNextBtn = document.getElementById('radioNextBtn');
+      const radioFreqSlider = document.getElementById('radioFreqSlider');
+      const radioFreqDisplay = document.getElementById('radioFreqDisplay');
+      const radioSong = document.getElementById('radioSong');
+      const radioTip = document.getElementById('radioTip');
+      const visualizerCanvas = document.getElementById('radioVisualizer');
+      const vizCtx = visualizerCanvas.getContext('2d');
+
+      // 模拟电台曲库
+      const songs = [
+        { title: "千年等一回", artist: "高胜美", freq: 97.5 },
+        { title: "遇见", artist: "孙燕姿", freq: 101.7 },
+        { title: "七里香", artist: "周杰伦", freq: 103.2 },
+        { title: "Super Star", artist: "S.H.E", freq: 99.1 },
+        { title: "欧若拉", artist: "张韶涵", freq: 105.5 },
+        { title: "江南", artist: "林俊杰", freq: 95.3 }
+      ];
+      const tips = [
+        "今日消费小贴士：设置预算上限，避免冲动消费。",
+        "省钱妙招：用现金支付更能感知消费痛感。",
+        "财务提醒：定期检查订阅服务，取消不常用的会员。",
+        "千禧格言：省下的每一分钱，都是未来的自由。",
+        "记账心得：坚持30天，你会惊讶自己的消费习惯。",
+        "购物前冷静三问：我真的需要吗？有没有替代方案？等一周还想要吗？"
+      ];
+
+      let radioOn = false;
+      let audioCtx = null;
+      let noiseNode = null;
+      let gainNode = null;
+      let vizInterval = null;
+
+      function updateDisplay(song) {
+        radioSong.textContent = `${song.title} - ${song.artist}`;
+        radioFreqDisplay.textContent = song.freq.toFixed(1);
+        radioFreqSlider.value = song.freq;
+      }
+
+      function randomSong() {
+        return songs[Math.floor(Math.random() * songs.length)];
+      }
+
+      function randomTip() {
+        return tips[Math.floor(Math.random() * tips.length)];
+      }
+
+      function startNoise() {
+        if (!audioCtx) {
+          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        const bufferSize = 2 * audioCtx.sampleRate;
+        const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          data[i] = (Math.random() * 2 - 1) * 0.05; // 白噪音
+        }
+        noiseNode = audioCtx.createBufferSource();
+        noiseNode.buffer = buffer;
+        noiseNode.loop = true;
+        gainNode = audioCtx.createGain();
+        gainNode.gain.setValueAtTime(0.08, audioCtx.currentTime);
+        noiseNode.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        noiseNode.start();
+      }
+
+      function stopNoise() {
+        if (noiseNode) {
+          noiseNode.stop();
+          noiseNode.disconnect();
+          noiseNode = null;
+        }
+        if (gainNode) {
+          gainNode.disconnect();
+          gainNode = null;
+        }
+      }
+
+      function startVisualizer() {
+        vizInterval = setInterval(() => {
+          const w = visualizerCanvas.width;
+          const h = visualizerCanvas.height;
+          vizCtx.clearRect(0, 0, w, h);
+          vizCtx.fillStyle = '#1b2a3a';
+          vizCtx.fillRect(0, 0, w, h);
+          const bars = 30;
+          const barWidth = (w / bars) - 2;
+          for (let i = 0; i < bars; i++) {
+            let height = Math.random() * (h * 0.8) + 2;
+            if (!radioOn) height = 2;
+            const x = i * (barWidth + 2);
+            const gradient = vizCtx.createLinearGradient(0, h, 0, 0);
+            gradient.addColorStop(0, '#2ecc40');
+            gradient.addColorStop(1, '#5b8caf');
+            vizCtx.fillStyle = gradient;
+            vizCtx.fillRect(x, h - height, barWidth, height);
+          }
+        }, 80);
+      }
+
+      function toggleRadio() {
+        radioOn = !radioOn;
+        if (radioOn) {
+          radioToggleBtn.textContent = '⏸ 暂停';
+          radioToggleBtn.classList.add('active');
+          startNoise();
+          if (!vizInterval) startVisualizer();
+          updateDisplay(randomSong());
+          radioTip.textContent = randomTip();
+        } else {
+          radioToggleBtn.textContent = '▶ 播放';
+          radioToggleBtn.classList.remove('active');
+          stopNoise();
+          if (vizInterval) { clearInterval(vizInterval); vizInterval = null; }
+          radioSong.textContent = '千禧年金曲 FM ' + radioFreqSlider.value;
+          radioTip.textContent = '暂停播放，理性消费。';
+        }
+      }
+
+      function nextSong() {
+        if (!radioOn) return;
+        updateDisplay(randomSong());
+        radioTip.textContent = randomTip();
+        // 稍微改变频率以增加真实感
+        const newFreq = (87 + Math.random() * 21).toFixed(1);
+        radioFreqDisplay.textContent = newFreq;
+        radioFreqSlider.value = newFreq;
+      }
+
+      radioToggleBtn.addEventListener('click', toggleRadio);
+      radioNextBtn.addEventListener('click', nextSong);
+
+      radioFreqSlider.addEventListener('input', () => {
+        const freq = parseFloat(radioFreqSlider.value).toFixed(1);
+        radioFreqDisplay.textContent = freq;
+        if (radioOn) {
+          // 根据频率选择一个接近的歌曲
+          const closest = songs.reduce((prev, curr) => Math.abs(curr.freq - freq) < Math.abs(prev.freq - freq) ? curr : prev);
+          updateDisplay(closest);
+          radioTip.textContent = randomTip();
+        } else {
+          radioSong.textContent = '千禧年金曲 FM ' + freq;
+        }
+      });
+
+      // 初始化显示
+      updateDisplay(songs[0]);
+      radioTip.textContent = tips[0];
+      startVisualizer();
+    })();
+
+    // ========== 消费手账功能 ==========
+    (function() {
+      const generateBtn = document.getElementById('generateJournalBtn');
+      const downloadBtn = document.getElementById('downloadJournalBtn');
+      const shareBtn = document.getElementById('shareJournalBtn');
+      const canvas = document.getElementById('journalCanvas');
+      const ctx = canvas.getContext('2d');
+
+      function drawJournal() {
+        const data = window.consumerData;
+        if (!data || !data.allBills || data.allBills.length === 0) {
+          // 没有数据时绘制提示
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.fillStyle = '#1b2a3a';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.font = '16px "Microsoft YaHei"';
+          ctx.fillStyle = '#8ea4c0';
+          ctx.textAlign = 'center';
+          ctx.fillText('请先在正面添加消费记录', canvas.width/2, canvas.height/2);
+          canvas.style.display = 'block';
+          return;
+        }
+
+        canvas.style.display = 'block';
+        const w = canvas.width;
+        const h = canvas.height;
+        ctx.clearRect(0, 0, w, h);
+
+        // 背景
+        ctx.fillStyle = '#fdf8f0';
+        ctx.fillRect(0, 0, w, h);
+        // 复古纸纹
+        ctx.fillStyle = 'rgba(200, 180, 140, 0.15)';
+        for (let i = 0; i < 50; i++) {
+          ctx.fillRect(Math.random() * w, Math.random() * h, 2, 2);
+        }
+
+        // 标题
+        ctx.fillStyle = '#5c4a3a';
+        ctx.font = 'bold 20px "Microsoft YaHei"';
+        ctx.textAlign = 'center';
+        ctx.fillText('📜 消费手账', w/2, 40);
+
+        // 日期
+        const today = new Date().toLocaleDateString('zh-CN');
+        ctx.font = '12px "Microsoft YaHei"';
+        ctx.fillText(today, w/2, 65);
+
+        // 分隔线
+        ctx.strokeStyle = '#d4b48f';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(30, 80);
+        ctx.lineTo(w-30, 80);
+        ctx.stroke();
+
+        // 列出账单
+        ctx.textAlign = 'left';
+        ctx.font = '13px "Microsoft YaHei"';
+        let y = 110;
+        const bills = data.allBills.slice(0, 6); // 最多显示6条
+        let totalSpent = 0;
+        bills.forEach((bill, idx) => {
+          ctx.fillStyle = '#3a3228';
+          ctx.fillText(`${bill.date}  ${bill.merchant}`, 40, y);
+          ctx.fillStyle = '#b85c3a';
+          ctx.textAlign = 'right';
+          ctx.fillText(`¥${bill.amount}`, w-40, y);
+          ctx.textAlign = 'left';
+          totalSpent += bill.amount;
+          y += 22;
+        });
+
+        // 总计
+        ctx.strokeStyle = '#d4b48f';
+        ctx.beginPath();
+        ctx.moveTo(30, y+5);
+        ctx.lineTo(w-30, y+5);
+        ctx.stroke();
+        y += 25;
+        ctx.fillStyle = '#3a3228';
+        ctx.font = 'bold 14px "Microsoft YaHei"';
+        ctx.fillText('合计支出', 40, y);
+        ctx.fillStyle = '#b85c3a';
+        ctx.textAlign = 'right';
+        ctx.fillText(`¥${totalSpent}`, w-40, y);
+        ctx.textAlign = 'left';
+
+        // 小贴士
+        y += 35;
+        const savingsTotal = data.savingsData ? data.savingsData.reduce((s,r)=>s+r.amount,0) : 0;
+        ctx.font = '11px "Microsoft YaHei"';
+        ctx.fillStyle = '#7a6a5a';
+        ctx.fillText('💡 累计已攒：¥' + savingsTotal.toFixed(2), 40, y);
+        y += 22;
+        ctx.fillText('💡 冷静清单项目数：' + (data.cooldownItems ? data.cooldownItems.length : 0), 40, y);
+
+        // 底部装饰
+        ctx.font = '10px "Microsoft YaHei"';
+        ctx.fillStyle = '#b8a48c';
+        ctx.textAlign = 'center';
+        ctx.fillText('—— 消费清醒账 Pro ——', w/2, h-20);
+      }
+
+      generateBtn.addEventListener('click', () => {
+        drawJournal();
+        downloadBtn.style.display = 'inline-block';
+        shareBtn.style.display = 'inline-block';
+      });
+
+      downloadBtn.addEventListener('click', () => {
+        const link = document.createElement('a');
+        link.download = '消费手账_' + new Date().toISOString().slice(0,10) + '.png';
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+      });
+
+      shareBtn.addEventListener('click', async () => {
+        if (navigator.share) {
+          const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+          if (blob) {
+            const file = new File([blob], '消费手账.png', { type: 'image/png' });
+            try {
+              await navigator.share({
+                title: '我的消费手账',
+                text: '看看我的千禧复古消费手账！',
+                files: [file]
+              });
+            } catch (e) {
+              // 用户取消分享
+            }
+          }
+        } else {
+          alert('当前浏览器不支持分享功能，请使用“保存图片”按钮下载后分享。');
+        }
+      });
+
+      // 初始状态不显示手账
+      canvas.style.display = 'none';
+    })();
+  </script>
+</body>
+</html>
